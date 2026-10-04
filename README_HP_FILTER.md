@@ -6,7 +6,7 @@ Bu proje, BIST 30 (Yahoo Finance sembolü `XU030.IS`) günlük kapanış fiyatla
 
 1. Günlük `Close` fiyatı yerel ham CSV’den okunur; yoksa Yahoo Finance’ten istenen tarih aralığı için indirilir.
 2. Ham kapanışlardan log getiriler hesaplanır ve ham seri için istatistiksel tanılar üretilir.
-3. `JUMP_DATES` içindeki tarihler, seçilen çalışma moduna göre değerlendirilir. HP filtresi ham log fiyat üzerinden hesaplanır; yalnızca sıçrama tarihlerinin dar çevresi cosine ağırlıklarıyla trend yönünde yumuşatılır.
+3. `JUMP_DATES` içindeki tarihler, seçilen çalışma moduna göre değerlendirilir. HP filtresi ham log fiyat üzerinden hesaplanır; yalnızca sıçrama tarihlerinin dar çevresi sin ağırlıklarıyla trend yönünde yumuşatılır.
 4. Düzeltilmiş fiyat serisi ve her düzeltme adımının JB sonuçları CSV olarak kaydedilir.
 5. Ham/düzeltilmiş getiriler karşılaştırılır; değiştirilen gün sayısı, getiri değişimleri ve varyans farkı raporlanır.
 6. Farklı pencere ve lambda ayarları için duyarlılık tablosu hesaplanır.
