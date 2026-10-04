@@ -115,23 +115,19 @@ def run_statistical_analysis(
     print(f"Annualized Volatility     : {annualized_volatility:.4%}")
 
     # ============================================================
-    # 6. NORMALITY / GAUSSIANITY
+    # 6. NORMALITY — JARQUE-BERA
     # ============================================================
-    print("\n" + "=" * 90)
-    print("2. NORMALITY / GAUSSIANITY DIAGNOSTICS")
-    print("=" * 90)
-
-    # 2.1 Jarque-Bera
     jb_stat, jb_pvalue = stats.jarque_bera(returns)
-    print("\n[2.1] JARQUE-BERA TEST")
-    print("-" * 90)
+    jb_decision = "REJECT" if jb_pvalue < alpha else "FAIL TO REJECT"
+    jb_status = "NON-NORMAL" if jb_pvalue < alpha else "NORMALITY NOT REJECTED"
+
+    print("\n" + "=" * 90)
+    print("2. NORMALITY — JARQUE-BERA TEST")
+    print("=" * 90)
     print(f"Statistic                 : {jb_stat:.6f}")
     print(f"p-value                   : {jb_pvalue:.6e}")
     print("H0                        : Returns are normally distributed.")
-    jb_decision = "REJECT" if jb_pvalue < alpha else "FAIL TO REJECT"
-    jb_status = "NON-NORMAL" if jb_pvalue < alpha else "NORMALITY NOT REJECTED"
-    print(f"Decision                  : {jb_decision}")
-    print(f"Interpretation            : {jb_status}")
+    print(f"Result                    : {jb_decision} H0 — {jb_status}")
 
     # ============================================================
     # 7. BROWNIAN VARIANCE SCALING
@@ -264,8 +260,7 @@ def run_statistical_analysis(
         arch_decision = "FAIL TO REJECT"
         arch_status = "NO SIGNIFICANT ARCH EFFECT DETECTED"
 
-    print(f"Decision                  : {arch_decision}")
-    print(f"Interpretation            : {arch_status}")
+    print(f"Result                    : {arch_decision} — {arch_status}")
 
     # ============================================================
     # 10. STATIONARITY
@@ -286,8 +281,7 @@ def run_statistical_analysis(
     print(f"5% Critical Value        : {adf_critical['5%']:.6f}")
     adf_decision = "REJECT UNIT ROOT" if adf_pvalue < alpha else "FAIL TO REJECT UNIT ROOT"
     adf_status = "STATIONARY" if adf_pvalue < alpha else "NON-STATIONARY"
-    print(f"Decision                  : {adf_decision}")
-    print(f"Interpretation            : {adf_status}")
+    print(f"Result                    : {adf_decision} — {adf_status}")
 
     # KPSS
     kpss_result = kpss(returns, regression="c", nlags="auto")
@@ -301,8 +295,7 @@ def run_statistical_analysis(
     print(f"5% Critical Value        : {kpss_critical['5%']:.6f}")
     kpss_decision = "REJECT STATIONARITY" if kpss_pvalue < alpha else "FAIL TO REJECT STATIONARITY"
     kpss_status = "NON-STATIONARY" if kpss_pvalue < alpha else "STATIONARY"
-    print(f"Decision                  : {kpss_decision}")
-    print(f"Interpretation            : {kpss_status}")
+    print(f"Result                    : {kpss_decision} — {kpss_status}")
 
     # ============================================================
     # 11. TAIL ANALYSIS

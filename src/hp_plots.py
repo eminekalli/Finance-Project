@@ -1,4 +1,4 @@
-"""Tez/rapor için HP düzeltme tanı grafiklerini dışa aktarır."""
+"""HP düzeltme tanı grafiklerini dışa aktarır."""
 from pathlib import Path
 from typing import Optional, Union
 

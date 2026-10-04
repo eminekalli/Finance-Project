@@ -1,4 +1,4 @@
-"""Lokal HP düzeltmesi; result.attrs CSV'ye yazılmaz."""
+"""Lokal HP düzeltmesi"""
 from pathlib import Path
 import warnings
 
@@ -13,15 +13,14 @@ LAMBDA = 144000
 ALPHA = 0.05
 WINDOW = 3
 EST_WINDOW = 30
-# Olay açıklamalarını kullanıcı doldurmalı (TODO).
 JUMP_DATES = {
     "2023-01-05": {"yon": "negatif", "olay": "TODO"},
     "2023-01-11": {"yon": "negatif", "olay": "TODO"},
     "2023-02-01": {"yon": "negatif", "olay": "TODO"},
-    "2023-02-07": {"yon": "negatif", "olay": "TODO"},
-    "2023-05-15": {"yon": "negatif", "olay": "TODO"},
+    "2023-02-07": {"yon": "negatif", "olay": "Deprem"},
+    "2023-05-15": {"yon": "negatif", "olay": "Seçim"},
     "2023-10-25": {"yon": "negatif", "olay": "TODO"},
-    "2024-08-05": {"yon": "negatif", "olay": "TODO"},
+    "2024-08-05": {"yon": "negatif", "olay": "Küresel Kara Pazartesi satışları ve devre kesici"},
     "2025-03-19": {"yon": "negatif", "olay": "TODO"},
     "2025-03-21": {"yon": "negatif", "olay": "TODO"},
     "2026-05-21": {"yon": "negatif", "olay": "TODO"},
@@ -37,13 +36,13 @@ JUMP_DATES = {
     "2026-04-08": {"yon": "pozitif", "olay": "TODO"},
 }
 
-
+##Farklı formatlarda gelebilecek tarih verilerini temizleyip saatten arındırır
 def _date_metadata(jump_dates):
     if isinstance(jump_dates, dict):
         return {pd.Timestamp(k).normalize(): v for k, v in jump_dates.items()}
     return {pd.Timestamp(k).normalize(): {} for k in jump_dates}
 
-
+###normal dağılıma uyup uymadığını test eder
 def normality_tests(r: pd.Series, alpha: float = ALPHA) -> dict:
     """Özet Jarque-Bera normallik istatistiklerini döndürür."""
     r = pd.Series(r).dropna()
@@ -56,7 +55,7 @@ def normality_tests(r: pd.Series, alpha: float = ALPHA) -> dict:
             "ex_kurt": float(stats.kurtosis(r, fisher=True, bias=False)),
             "all_pass": bool(jb_p > alpha)}
 
-
+##Ham fiyat verilerini analiz için güvenli, temiz ve standart bir formata getirir
 def _prepare(raw_price):
     p = pd.Series(raw_price, copy=True).astype(float)
     p.index = pd.to_datetime(p.index).normalize()
@@ -65,7 +64,7 @@ def _prepare(raw_price):
         raise ValueError("Log dönüşümü için fiyatlar pozitif olmalıdır.")
     return p
 
-
+##Belirli bir pencere genişliğinde zaman blokları (aralıkları) oluşturur
 def _blocks(positions, window, merge_close_dates, n):
     positions = sorted(set(positions))
     if not positions:
@@ -78,7 +77,7 @@ def _blocks(positions, window, merge_close_dates, n):
             groups.append([pos])
     return [(max(0, g[0] - window), min(n - 1, g[-1] + window)) for g in groups]
 
-
+##Ani sıçramaları veya yapısal kırılmaları Hodrick-Prescott (HP) Filtresi kullanarak düzeltmek (arındırmak) için geliştirilmiştir
 def _correction(log_price, dates, lamb, window, est_window, merge_close_dates=True,
                 snap_to_next_trading_day=False):
     idx = log_price.index
@@ -125,7 +124,7 @@ def _correction(log_price, dates, lamb, window, est_window, merge_close_dates=Tr
     changed = np.flatnonzero(weight_all > 0)
     return out, changed, trend_out, cycle_out, mapped, blocks
 
-
+##Sıçrama tarihlerini Hodrick-Prescott (HP) Filtresi ile optimize eden ana optimizasyon ve düzeltme orkestratörüdür
 def find_minimal_hp_correction(raw_price: pd.Series, lamb: float = LAMBDA,
         alpha: float = ALPHA, jump_dates=JUMP_DATES, window: int = WINDOW,
         est_window: int = EST_WINDOW, merge_close_dates: bool = True,
@@ -200,7 +199,7 @@ def find_minimal_hp_correction(raw_price: pd.Series, lamb: float = LAMBDA,
     hist = pd.DataFrame(history)
     return corrected, list(replaced_idx), hist, tr, cy, bool(normality_tests(corrected.diff().dropna(), alpha)["all_pass"])
 
-
+##Fiyatlar üzerindeki düzeltmeleri, trend/çevrim bileşenlerini ve optimizasyon geçmişini elde eder
 def run_hp_filter(data, lamb=LAMBDA, alpha=ALPHA, jump_dates=JUMP_DATES,
         window=WINDOW, est_window=EST_WINDOW, mode="all", output_dir=None,
         merge_close_dates=True, snap_to_next_trading_day=False):
@@ -239,7 +238,7 @@ def run_hp_filter(data, lamb=LAMBDA, alpha=ALPHA, jump_dates=JUMP_DATES,
     print(f"Uygulanan sıçrama tarihi: {applied_dates} | Düzeltilen gün: {len(replaced)} | Normallik: {'EVET' if converged else 'HAYIR'}")
     return result
 
-
+##Farklı pencere genişlikleri, eğitim pencereleri ve lambda (düzgünleştirme) parametrelerinin model sonuçlarını (normallik testleri, değiştirilen gün oranları ve varyans değişimleri) nasıl etkilediğini test eder ve tüm kombinasyonları bir tablo halinde raporlar.
 def sensitivity_analysis(raw_price, windows=(1, 2, 3, 5), est_windows=(15, 30, 60),
                          lambdas=(1600, 14400, 144000), output_dir=None):
     """Summarize JB and intervention sensitivity; writes a CSV summary."""
@@ -265,7 +264,7 @@ def sensitivity_analysis(raw_price, windows=(1, 2, 3, 5), est_windows=(15, 30, 6
     print(table.to_string(index=False))
     return table
 
-
+##Hodrick-Prescott (HP) filtresi ile yapılan düzeltmelerin maliyetini, etkisini ve doğruluk denetimini raporlamak için tasarlanmıştır
 def correction_cost_report(result):
     """Print and return intervention costs; assert aggregate log return is preserved."""
     raw = result["Log_Return_Original"].dropna()
@@ -290,7 +289,8 @@ def correction_cost_report(result):
     print(report["per_date"].to_string(index=False))
     return report
 
-
+##Kalan hepsi için 
+#Bu fonksiyonlar, zaman serisi analizinde eşik değerine dayalı otomatik sıçrama tespiti, manuel ve objektif (otomatik) yöntemlerin karşılaştırılması, süreç görselleştirme ve ham ile düzeltilmiş serilerin detaylı istatistiksel kıyaslanması gibi son derece kritik adımları yöneten fonksiyonlardır.
 def detect_jumps_by_threshold(log_returns, k=3):
     """Return dates whose absolute log return exceeds k times sample sigma."""
     r = pd.Series(log_returns).dropna()
